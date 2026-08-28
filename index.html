@@ -182,6 +182,40 @@
   ul.regles li:first-child { border-top: none; }
   ul.regles li::before { content: "✦"; position: absolute; left: 0; color: var(--gold-dim); }
 
+  /* ---------- Checklist du jour ---------- */
+  ul.jour { list-style: none; }
+  ul.jour li {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 17px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity .15s;
+  }
+  ul.jour .box {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--gold-dim);
+    border-radius: 9px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: transparent;
+  }
+  ul.jour .lbl { font-size: 18px; font-weight: 600; color: var(--text); }
+  ul.jour .src { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+  ul.jour li.done { opacity: .55; }
+  ul.jour li.done .box { color: var(--gold); border-color: var(--gold); }
+  ul.jour li.done .lbl { color: var(--text-dim); }
+  .calm { color: var(--text-dim); text-align: center; padding: 40px 20px; font-size: 16px; }
+
   /* ---------- Onglets ---------- */
   nav {
     position: fixed;
@@ -227,12 +261,14 @@
   <div id="installHint">➕ Installer sur l’écran d’accueil</div>
   <main>
     <div id="dataErr" style="display:none"></div>
-    <section id="screen-objectifs" class="screen active"></section>
-    <section id="screen-aujourdhui" class="screen"></section>
+    <section id="screen-jour" class="screen active"></section>
+    <section id="screen-chantiers" class="screen"></section>
+    <section id="screen-objectifs" class="screen"></section>
   </main>
   <nav>
-    <button id="tab-objectifs" class="active">🎯 Objectifs</button>
-    <button id="tab-aujourdhui">⚔️ Aujourd’hui</button>
+    <button id="tab-jour" class="active">✅ Jour</button>
+    <button id="tab-chantiers">⚔️ Chantiers</button>
+    <button id="tab-objectifs">🎯 Objectifs</button>
   </nav>
 </div>
 
@@ -296,7 +332,60 @@ function renderObjectifs(d) {
   document.getElementById("screen-objectifs").innerHTML = h;
 }
 
-function renderAujourdhui(d) {
+/* ---------- checklist du jour (etat par date locale, remis a zero naturellement) ---------- */
+function todayLocal() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
+function jourKey() { return "cap_jour_" + todayLocal(); }
+function getJourState() {
+  try { return JSON.parse(lsGet(jourKey()) || "{}"); } catch (e) { return {}; }
+}
+function setJourState(st) { lsSet(jourKey(), JSON.stringify(st)); }
+function purgeOldJourKeys() {
+  try {
+    const dead = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf("cap_jour_") === 0 && k !== jourKey()) dead.push(k);
+    }
+    dead.forEach(function (k) { lsDel(k); });
+  } catch (e) {}
+}
+
+function renderJour(d) {
+  const el = document.getElementById("screen-jour");
+  const items = (d.quotidien || []).filter(function (it) { return it && it.t; });
+  if (!items.length) {
+    el.innerHTML = '<div class="calm">Rien de listé aujourd’hui.</div>';
+    return;
+  }
+  purgeOldJourKeys();
+  const state = getJourState();
+  let h = '<h2 class="etage">Aujourd’hui <small>— ' + esc(todayLocal()) + "</small></h2>";
+  h += '<ul class="jour">';
+  for (const it of items) {
+    const done = state[it.t] === true;
+    h += '<li data-k="' + esc(it.t) + '"' + (done ? ' class="done"' : "") + ">" +
+      '<span class="box">✓</span><span><div class="lbl">' + esc(it.t) + "</div>" +
+      (it.src ? '<div class="src">' + esc(it.src) + "</div>" : "") +
+      "</span></li>";
+  }
+  h += "</ul>";
+  el.innerHTML = h;
+  el.querySelectorAll("ul.jour li").forEach(function (li) {
+    li.addEventListener("click", function () {
+      const st = getJourState();
+      const k = li.getAttribute("data-k");
+      if (li.classList.toggle("done")) st[k] = true; else delete st[k];
+      setJourState(st);
+    });
+  });
+}
+
+function renderChantiers(d) {
   let h = '<h2 class="etage">Nœuds actifs <small>— ' + d.actifs.length + "</small></h2>";
   for (const n of d.actifs) {
     let body = "";
@@ -320,7 +409,7 @@ function renderAujourdhui(d) {
       '<div class="why">' + esc(n.why) + "</div>" +
       '<div class="body">' + body + "</div></div>";
   }
-  document.getElementById("screen-aujourdhui").innerHTML = h;
+  document.getElementById("screen-chantiers").innerHTML = h;
 }
 
 function wireCards() {
@@ -335,21 +424,24 @@ function showApp(d) {
   document.getElementById("lock").style.display = "none";
   document.getElementById("app").style.display = "block";
   document.getElementById("genDate").textContent = d.genere_le ? "maj " + d.genere_le : "";
+  renderJour(d);
   renderObjectifs(d);
-  renderAujourdhui(d);
+  renderChantiers(d);
   wireCards();
+  switchTab("jour");
 }
 
 /* ---------- onglets ---------- */
 function switchTab(name) {
-  ["objectifs", "aujourdhui"].forEach(function (t) {
+  ["jour", "chantiers", "objectifs"].forEach(function (t) {
     document.getElementById("screen-" + t).classList.toggle("active", t === name);
     document.getElementById("tab-" + t).classList.toggle("active", t === name);
   });
   window.scrollTo(0, 0);
 }
+document.getElementById("tab-jour").addEventListener("click", function () { switchTab("jour"); });
+document.getElementById("tab-chantiers").addEventListener("click", function () { switchTab("chantiers"); });
 document.getElementById("tab-objectifs").addEventListener("click", function () { switchTab("objectifs"); });
-document.getElementById("tab-aujourdhui").addEventListener("click", function () { switchTab("aujourdhui"); });
 
 /* ---------- verrouillage ---------- */
 document.getElementById("btnLock").addEventListener("click", function () {
