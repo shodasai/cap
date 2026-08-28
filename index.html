@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e1a">
+<title>Cap</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-card: #121829;
+    --bg-card2: #182036;
+    --gold: #ffd98a;
+    --gold-dim: #b89a5e;
+    --text: #e8ecf5;
+    --text-dim: #9aa3b8;
+    --line: #232c45;
+    --danger: #ff9a8a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.45;
+    overflow-x: hidden;
+  }
+  #app { display: none; min-height: 100%; }
+
+  /* ---------- Écran mot de passe ---------- */
+  #lock {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 18px;
+  }
+  #lock .star { font-size: 44px; color: var(--gold); }
+  #lock h1 { font-size: 30px; letter-spacing: 3px; color: var(--gold); font-weight: 600; }
+  #lock p.sub { color: var(--text-dim); font-size: 15px; text-align: center; }
+  #lock input {
+    width: 100%;
+    max-width: 320px;
+    padding: 15px 16px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--bg-card);
+    color: var(--text);
+    text-align: center;
+    outline: none;
+  }
+  #lock input:focus { border-color: var(--gold-dim); }
+  #lock button {
+    width: 100%;
+    max-width: 320px;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    background: var(--gold);
+    color: #1a1405;
+    cursor: pointer;
+  }
+  #lockErr { color: var(--danger); font-size: 15px; text-align: center; min-height: 22px; }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 10px;
+  }
+  header .brand { color: var(--gold); font-size: 20px; font-weight: 600; letter-spacing: 2px; }
+  header .meta { color: var(--text-dim); font-size: 12.5px; }
+  #btnLock {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+
+  /* ---------- Bandeau installation ---------- */
+  #installHint {
+    display: none;
+    margin: 0 18px 6px;
+    padding: 10px 14px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* ---------- Contenu ---------- */
+  main { padding: 4px 16px 90px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  h2.etage {
+    color: var(--gold);
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 18px 4px 10px;
+  }
+  h2.etage small { color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .card > button.head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 17px 16px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+  .card > button.head .chev { color: var(--gold-dim); font-size: 14px; transition: transform .18s; flex-shrink: 0; }
+  .card.open > button.head .chev { transform: rotate(90deg); }
+  .card .body {
+    display: none;
+    padding: 0 16px 15px;
+    color: var(--text-dim);
+    font-size: 15.5px;
+  }
+  .card.open .body { display: block; }
+  .card.sub > button.head { font-size: 16px; padding: 14px 16px; }
+
+  .why { color: var(--text-dim); font-size: 14.5px; padding: 0 16px 12px; margin-top: -8px; }
+
+  ul.todo { list-style: none; margin-top: 4px; }
+  ul.todo li {
+    padding: 8px 0 8px 24px;
+    position: relative;
+    border-top: 1px solid var(--line);
+    color: var(--text);
+    font-size: 15.5px;
+  }
+  ul.todo li:first-child { border-top: none; }
+  ul.todo li::before { content: "◇"; position: absolute; left: 2px; color: var(--gold-dim); }
+
+  .encours { margin-top: 10px; }
+  .encours summary {
+    color: var(--gold-dim);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 6px 0;
+    list-style: none;
+  }
+  .encours summary::-webkit-details-marker { display: none; }
+  .encours summary::before { content: "▸ "; }
+  .encours[open] summary::before { content: "▾ "; }
+  .encours p { color: var(--text-dim); font-size: 14.5px; padding: 4px 0 2px 14px; }
+  .evidence { margin-top: 10px; color: var(--text-dim); font-size: 13.5px; font-style: italic; }
+  .evidence::before { content: "✦ "; color: var(--gold-dim); font-style: normal; }
+
+  ul.regles { list-style: none; }
+  ul.regles li { padding: 8px 0 8px 22px; position: relative; border-top: 1px solid var(--line); font-size: 15px; color: var(--text); }
+  ul.regles li:first-child { border-top: none; }
+  ul.regles li::before { content: "✦"; position: absolute; left: 0; color: var(--gold-dim); }
+
+  /* ---------- Onglets ---------- */
+  nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    background: rgba(10, 14, 26, .96);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button {
+    flex: 1;
+    padding: 13px 0 15px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 15.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  nav button.active { color: var(--gold); }
+  #dataErr { margin: 20px; color: var(--danger); font-size: 15px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="lock">
+  <div class="star">✦</div>
+  <h1>CAP</h1>
+  <p class="sub">Ton cap, chiffré. Entre le mot de passe.</p>
+  <input id="pwInput" type="password" placeholder="Mot de passe" autocomplete="current-password">
+  <div id="lockErr"></div>
+  <button id="pwBtn">Ouvrir</button>
+</div>
+
+<div id="app">
+  <header>
+    <span class="brand">✦ CAP</span>
+    <span class="meta" id="genDate"></span>
+    <button id="btnLock" title="Verrouiller">🔒</button>
+  </header>
+  <div id="installHint">➕ Installer sur l’écran d’accueil</div>
+  <main>
+    <div id="dataErr" style="display:none"></div>
+    <section id="screen-objectifs" class="screen active"></section>
+    <section id="screen-aujourdhui" class="screen"></section>
+  </main>
+  <nav>
+    <button id="tab-objectifs" class="active">🎯 Objectifs</button>
+    <button id="tab-aujourdhui">⚔️ Aujourd’hui</button>
+  </nav>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- utilitaires ---------- */
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/* ---------- déchiffrement (PBKDF2-SHA256 + AES-GCM 256) ---------- */
+async function decryptBlob(blob, password) {
+  const enc = new TextEncoder();
+  const salt = b64ToBytes(blob.salt);
+  const iv = b64ToBytes(blob.iv);
+  const ct = b64ToBytes(blob.ct);
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: salt, iterations: blob.iter, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+/* ---------- rendu ---------- */
+function cardHTML(title, bodyHTML, extraClass) {
+  return '<div class="card ' + (extraClass || "") + '">' +
+    '<button class="head" type="button"><span>' + esc(title) + '</span><span class="chev">▶</span></button>' +
+    '<div class="body">' + bodyHTML + '</div></div>';
+}
+
+function renderObjectifs(d) {
+  let h = '<h2 class="etage">Fin 2026 <small>— les 6 étoiles</small></h2>';
+  for (const o of d.objectifs) h += cardHTML(o.t, "<p>" + esc(o.detail) + "</p>");
+  if (d.etage2 && d.etage2.objectifs) {
+    h += '<h2 class="etage">' + esc(d.etage2.titre || "Mi-2027") + "</h2>";
+    for (const o of d.etage2.objectifs) h += cardHTML(o.t, "<p>" + esc(o.detail) + "</p>", "sub");
+  }
+  if (d.regles_papier && d.regles_papier.length) {
+    h += '<h2 class="etage">Repères</h2>';
+    let rl = '<ul class="regles">';
+    for (const r of d.regles_papier) rl += "<li>" + esc(r) + "</li>";
+    rl += "</ul>";
+    h += cardHTML("📜 Règles du papier", rl, "sub");
+  }
+  document.getElementById("screen-objectifs").innerHTML = h;
+}
+
+function renderAujourdhui(d) {
+  let h = '<h2 class="etage">Nœuds actifs <small>— ' + d.actifs.length + "</small></h2>";
+  for (const n of d.actifs) {
+    let body = "";
+    if (n.a_faire && n.a_faire.length) {
+      body += '<ul class="todo">';
+      for (const t of n.a_faire) body += "<li>" + esc(t) + "</li>";
+      body += "</ul>";
+    } else {
+      body += "<p>Rien en file — voir l’arbre.</p>";
+    }
+    if (n.en_cours && n.en_cours.length) {
+      body += '<details class="encours"><summary>En cours</summary>';
+      for (const t of n.en_cours) body += "<p>" + esc(t) + "</p>";
+      body += "</details>";
+    }
+    if (n.evidence_exemple) {
+      body += '<div class="evidence">Preuve type : ' + esc(n.evidence_exemple) + "</div>";
+    }
+    h += '<div class="card open">' +
+      '<button class="head" type="button"><span>' + esc(n.nom) + '</span><span class="chev">▶</span></button>' +
+      '<div class="why">' + esc(n.why) + "</div>" +
+      '<div class="body">' + body + "</div></div>";
+  }
+  document.getElementById("screen-aujourdhui").innerHTML = h;
+}
+
+function wireCards() {
+  document.querySelectorAll(".card > button.head").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      btn.parentElement.classList.toggle("open");
+    });
+  });
+}
+
+function showApp(d) {
+  document.getElementById("lock").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  document.getElementById("genDate").textContent = d.genere_le ? "maj " + d.genere_le : "";
+  renderObjectifs(d);
+  renderAujourdhui(d);
+  wireCards();
+}
+
+/* ---------- onglets ---------- */
+function switchTab(name) {
+  ["objectifs", "aujourdhui"].forEach(function (t) {
+    document.getElementById("screen-" + t).classList.toggle("active", t === name);
+    document.getElementById("tab-" + t).classList.toggle("active", t === name);
+  });
+  window.scrollTo(0, 0);
+}
+document.getElementById("tab-objectifs").addEventListener("click", function () { switchTab("objectifs"); });
+document.getElementById("tab-aujourdhui").addEventListener("click", function () { switchTab("aujourdhui"); });
+
+/* ---------- verrouillage ---------- */
+document.getElementById("btnLock").addEventListener("click", function () {
+  lsDel("cap_pw");
+  location.reload();
+});
+
+/* ---------- démarrage ---------- */
+let BLOB = null;
+
+async function loadBlob() {
+  const r = await fetch("data.enc.json");
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+async function tryOpen(pw, fromStorage) {
+  const errEl = document.getElementById("lockErr");
+  try {
+    const data = await decryptBlob(BLOB, pw);
+    lsSet("cap_pw", pw);
+    showApp(data);
+  } catch (e) {
+    lsDel("cap_pw");
+    if (!fromStorage) {
+      errEl.textContent = "Mauvais mot de passe — réessaie.";
+      document.getElementById("pwInput").value = "";
+      document.getElementById("pwInput").focus();
+    }
+  }
+}
+
+document.getElementById("pwBtn").addEventListener("click", function () {
+  const pw = document.getElementById("pwInput").value.trim();
+  if (pw) tryOpen(pw, false);
+});
+document.getElementById("pwInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") document.getElementById("pwBtn").click();
+});
+
+(async function init() {
+  try {
+    BLOB = await loadBlob();
+  } catch (e) {
+    document.getElementById("lock").querySelector("p.sub").textContent =
+      "Données inaccessibles (hors-ligne sans cache ?). Réessaie plus tard.";
+    return;
+  }
+  const saved = lsGet("cap_pw");
+  if (saved) tryOpen(saved, true);
+})();
+
+/* ---------- service worker + installation ---------- */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installHint").style.display = "block";
+});
+document.getElementById("installHint").addEventListener("click", function () {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt = null;
+  document.getElementById("installHint").style.display = "none";
+});
+window.addEventListener("appinstalled", function () {
+  document.getElementById("installHint").style.display = "none";
+});
+</script>
+</body>
+</html>
