@@ -2,7 +2,7 @@
    shell : cache-first · données (data.enc.json) : network-first avec repli cache */
 "use strict";
 
-const SHELL_CACHE = "cap-shell-v2";
+const SHELL_CACHE = "cap-shell-v3";
 const DATA_CACHE = "cap-data-v1";
 
 const SHELL_FILES = [
