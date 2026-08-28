@@ -2,7 +2,7 @@
    shell : cache-first · données (data.enc.json) : network-first avec repli cache */
 "use strict";
 
-const SHELL_CACHE = "cap-shell-v3";
+const SHELL_CACHE = "cap-shell-v4";
 const DATA_CACHE = "cap-data-v1";
 
 const SHELL_FILES = [
@@ -15,9 +15,18 @@ const SHELL_FILES = [
 ];
 
 self.addEventListener("install", function (event) {
+  // cache: "reload" = toujours le reseau, jamais le cache HTTP du navigateur
+  // (sinon un install peut figer un vieux shell dans le nouveau cache versionne)
   event.waitUntil(
     caches.open(SHELL_CACHE)
-      .then(function (cache) { return cache.addAll(SHELL_FILES); })
+      .then(function (cache) {
+        return Promise.all(SHELL_FILES.map(function (u) {
+          return fetch(new Request(u, { cache: "reload" })).then(function (resp) {
+            if (!resp.ok) throw new Error("HTTP " + resp.status + " sur " + u);
+            return cache.put(u, resp);
+          });
+        }));
+      })
       .then(function () { return self.skipWaiting(); })
   );
 });
